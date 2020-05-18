@@ -1,0 +1,53 @@
+{
+  "name": "vscode-example-test-controller",
+  "displayName": "Example Test Explorer",
+  "description": "An example Test Controller for Visual Studio Code",
+  "icon": "img/icon.png",
+  "author": "Holger Benl <hbenl@evandor.de>",
+  "publisher": "hbenl",
+  "version": "0.0.1",
+  "license": "MIT",
+  "homepage": "https://github.com/hbenl/vscode-example-test-controller",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hbenl/vscode-example-test-controller.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hbenl/vscode-example-test-controller/issues"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "test",
+    "testing"
+  ],
+  "main": "out/main.js",
+  "scripts": {
+    "clean": "rimraf out *.vsix",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "rebuild": "npm run clean && npm run build",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "tslib": "^1.10.0",
+    "vscode-test-adapter-api": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "~1.23.0",
+    "typescript": "^3.5.3",
+    "vsce": "^1.65.0"
+  },
+  "engines": {
+    "vscode": "^1.23.0"
+  },
+  "extensionDependencies": [
+    "hbenl.vscode-test-explorer"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {}
+}
