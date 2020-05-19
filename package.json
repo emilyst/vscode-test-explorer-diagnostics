@@ -4,7 +4,7 @@
   "description": "A Visual Studio Code extension for Test Explorer UI which populates test outcomes as diagnostics in the Problems panel",
   "icon": "img/icon.png",
   "author": "Emily Strickland <github@emily.st>",
-  "publisher": "emilyst",
+  "publisher": "emilylilylime",
   "version": "0.0.1",
   "license": "MIT",
   "homepage": "https://github.com/emilyst/vscode-test-explorer-diagnostics",
@@ -31,10 +31,10 @@
     "watch": "tsc -w",
     "rebuild": "npm run clean && npm run build",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "vscode:prepublish": "tsc"
   },
   "dependencies": {
-    "tslib": "^1.13.0",
     "vscode-test-adapter-api": "^1.8.0"
   },
   "devDependencies": {
