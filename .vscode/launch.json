@@ -4,13 +4,13 @@
     {
       "type": "extensionHost",
       "request": "launch",
-      "name": "Example Controller",
+      "name": "Test Explorer Diagnostics Controller",
       "runtimeExecutable": "${execPath}",
       "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}"
+        "--extensionDevelopmentPath=${workspaceRoot}"
       ],
       "outFiles": [
-        "${workspaceFolder}/out"
+        "${workspaceRoot}/out"
       ]
     }
   ]

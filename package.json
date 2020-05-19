@@ -1,26 +1,28 @@
 {
-  "name": "vscode-example-test-controller",
-  "displayName": "Example Test Explorer",
-  "description": "An example Test Controller for Visual Studio Code",
+  "name": "vscode-test-explorer-diagnostics",
+  "displayName": "Test Explorer Diagnostics Controller",
+  "description": "A Visual Studio Code extension for Test Explorer UI which populates test outcomes as diagnostics in the Problems panel",
   "icon": "img/icon.png",
-  "author": "Holger Benl <hbenl@evandor.de>",
-  "publisher": "hbenl",
+  "author": "Emily Strickland <github@emily.st>",
+  "publisher": "emilyst",
   "version": "0.0.1",
   "license": "MIT",
-  "homepage": "https://github.com/hbenl/vscode-example-test-controller",
+  "homepage": "https://github.com/emilyst/vscode-test-explorer-diagnostics",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hbenl/vscode-example-test-controller.git"
+    "url": "https://github.com/emilyst/vscode-test-explorer-diagnostics.git"
   },
   "bugs": {
-    "url": "https://github.com/hbenl/vscode-example-test-controller/issues"
+    "url": "https://github.com/emilyst/vscode-test-explorer-diagnostics/issues"
   },
   "categories": [
     "Other"
   ],
   "keywords": [
     "test",
-    "testing"
+    "testing",
+    "diagnostics",
+    "problems"
   ],
   "main": "out/main.js",
   "scripts": {
@@ -32,16 +34,16 @@
     "publish": "vsce publish"
   },
   "dependencies": {
-    "tslib": "^1.10.0",
-    "vscode-test-adapter-api": "^1.7.0"
+    "tslib": "^1.13.0",
+    "vscode-test-adapter-api": "^1.8.0"
   },
   "devDependencies": {
-    "@types/vscode": "~1.23.0",
-    "typescript": "^3.5.3",
-    "vsce": "^1.65.0"
+    "@types/vscode": "~1.45.0",
+    "typescript": "^3.9.2",
+    "vsce": "^1.75.0"
   },
   "engines": {
-    "vscode": "^1.23.0"
+    "vscode": "^1.45.0"
   },
   "extensionDependencies": [
     "hbenl.vscode-test-explorer"

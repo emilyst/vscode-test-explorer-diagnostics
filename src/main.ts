@@ -1,21 +1,17 @@
-import * as vscode from 'vscode';
+import { extensions, ExtensionContext } from 'vscode';
 import { TestHub, testExplorerExtensionId } from 'vscode-test-adapter-api';
-import { ExampleController } from './controller';
+import { TestExplorerDiagnosticsController } from './controller';
 
 let testHub: TestHub | undefined;
-let controller: ExampleController | undefined;
+let controller: TestExplorerDiagnosticsController | undefined;
 
-export async function activate(context: vscode.ExtensionContext) {
-
-	// get the Test Explorer extension
-	const testExplorerExtension = vscode.extensions.getExtension<TestHub>(testExplorerExtensionId);
+export async function activate(context: ExtensionContext) {
+	const testExplorerExtension = extensions.getExtension<TestHub>(testExplorerExtensionId);
 
 	if (testExplorerExtension) {
-
 		testHub = testExplorerExtension.exports;
-		controller = new ExampleController();
+		controller = new TestExplorerDiagnosticsController();
 		testHub.registerTestController(controller);
-
 	}
 }
 

@@ -1,102 +1,141 @@
-import * as vscode from 'vscode';
-import { TestController, TestAdapter, TestSuiteInfo, TestInfo } from 'vscode-test-adapter-api';
+import {
+	Diagnostic,
+	DiagnosticCollection,
+	DiagnosticSeverity,
+	Position,
+	Range,
+	Uri,
+	languages,
+} from 'vscode';
 
-/**
- * This class is intended as a starting point for implementing a "real" TestController.
- * The file `README.md` contains further instructions.
- */
-export class ExampleController implements TestController {
+import {
+	TestAdapter,
+	TestController,
+	TestEvent,
+	TestInfo,
+	TestSuiteInfo,
+} from 'vscode-test-adapter-api';
 
-	// here we collect subscriptions and other disposables that need
-	// to be disposed when an adapter is unregistered
+export class TestExplorerDiagnosticsController implements TestController {
 	private readonly disposables = new Map<TestAdapter, { dispose(): void }[]>();
-
-	private statusBarItem: vscode.StatusBarItem;
-	private passedTests = 0;
-	private failedTests = 0;
+	private readonly diagnosticCollection: DiagnosticCollection;
+	private readonly testEventsById = new Map<string, TestEvent>();
+	private testInfosById = new Map<string, TestInfo>();
 
 	constructor() {
-
-		this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-		this.statusBarItem.show();
-
-		// run all tests when the statusBarItem is clicked,
-		// we do this by invoking a command that is contributed by the Test Explorer extension
-		this.statusBarItem.command = 'test-explorer.run-all';
+		this.diagnosticCollection = languages.createDiagnosticCollection('test-explorer-diagnostics');
 	}
 
 	registerTestAdapter(adapter: TestAdapter): void {
-		
 		const adapterDisposables: { dispose(): void }[] = [];
 		this.disposables.set(adapter, adapterDisposables);
 
+		adapterDisposables.push(adapter.tests(loadEvent => {
+			if (loadEvent.type === 'finished' && loadEvent.suite) {
+				const newTestInfosById = this.flattenTestInfos(loadEvent.suite).reduce((accumulator, info) => {
+					accumulator.set(info.id, info);
+					return accumulator;
+				}, new Map<string, TestInfo>());
 
-		// the ExampleController will simply listen for events from the Test Adapter(s)
-		// and write them to a StatusBarItem
+				this.testInfosById.forEach((_: TestInfo, id: string) => {
+					if (!newTestInfosById.has(id)) {
+						this.testEventsById.delete(id);  // test has disappeared
+					}
+				});
 
-		adapterDisposables.push(adapter.tests(testLoadEvent => {
+				this.testInfosById = newTestInfosById;
 
-			if (testLoadEvent.type === 'started') {
-
-				this.statusBarItem.text = 'Loading tests...';
-
-			} else { // testLoadEvent.type === 'finished'
-
-				const rootSuite = testLoadEvent.suite;
-				const testCount = rootSuite ? countTests(rootSuite) : 0;
-				this.statusBarItem.text = `Loaded ${testCount} tests`;
-
+				this.resetDiagnosticsCollection();
 			}
 		}));
 
-		adapterDisposables.push(adapter.testStates(testRunEvent => {
+		adapterDisposables.push(adapter.testStates(event => {
+			if (event.type === 'test') {
+				if (typeof event.test === 'string') {
+					this.testEventsById.set(event.test, event);
+				}
+			}
 
-			if (testRunEvent.type === 'started') {
+			this.resetDiagnosticsCollection();
+		}));
 
-				this.statusBarItem.text = 'Running tests: ...';
-				this.passedTests = 0;
-				this.failedTests = 0;
-
-			} else if (testRunEvent.type === 'test') {
-
-				if (testRunEvent.state === 'passed') {
-					this.passedTests++;
-				} else if (testRunEvent.state === 'failed') {
-					this.failedTests++;
+		if (adapter.retire) {
+			adapterDisposables.push(adapter.retire(retireEvent => {
+				if (retireEvent.tests) {
+					retireEvent.tests.forEach(id => {
+						this.testInfosById.delete(id);
+						this.testEventsById.delete(id);
+					});
 				}
 
-				this.statusBarItem.text = `Running tests: ${this.passedTests} passed / ${this.failedTests} failed`;
+				this.resetDiagnosticsCollection();
+			}));
+		}
+	}
 
-			} else if (testRunEvent.type === 'finished') {
+	private resetDiagnosticsCollection() {
+		this.diagnosticCollection.clear();
 
-				this.statusBarItem.text = `Tests: ${this.passedTests} passed / ${this.failedTests} failed`;
+		this.buildDiagnosticsByPath().forEach((diagnostics, path) => {
+			this.diagnosticCollection.set(Uri.file(path), diagnostics);
+		});
+	}
 
+	private buildDiagnosticsByPath() {
+		return Array.from(this.testEventsById.entries()).reduce((accumulator, [id, event]) => {
+			if (event.state !== 'failed') {
+				return accumulator;
 			}
-		}));
+
+			if (this.testInfosById.has(id)) {
+				const info = this.testInfosById.get(id)!;
+
+				if (info.file && event.decorations) {
+					const diagnostics: Diagnostic[] = event.decorations.map(decoration => {
+						const newDiagnostic = new Diagnostic(
+							new Range(
+								new Position(decoration.line, 0),
+								new Position(decoration.line, 999)  // just do the whole line for now
+							),
+							decoration.message.trim().replace(/[\s]+/g, ' '),
+							DiagnosticSeverity.Error
+						);
+						newDiagnostic.source = 'Test Explorer';
+
+						return newDiagnostic;
+					});
+
+					accumulator.set(
+						info.file,
+						(accumulator.get(info.file) || []).concat(diagnostics || [])
+					);
+				}
+			}
+			return accumulator;
+		}, new Map<string, Diagnostic[]>());
+	}
+
+	private flattenTestInfos(info: TestSuiteInfo | TestInfo): TestInfo[] {
+		if (info.type === 'suite') {
+			return info.children.map(child => this.flattenTestInfos(child)).reduce((accumulator, infos) => {
+				return accumulator.concat(infos);
+			});
+		} else {
+			return [info];
+		}
 	}
 
 	unregisterTestAdapter(adapter: TestAdapter): void {
+		this.diagnosticCollection.clear();
+		this.diagnosticCollection.dispose();
 
 		const adapterDisposables = this.disposables.get(adapter);
 		if (adapterDisposables) {
-
 			for (const disposable of adapterDisposables) {
 				disposable.dispose();
 			}
 
 			this.disposables.delete(adapter);
 		}
-	}
-}
-
-function countTests(info: TestSuiteInfo | TestInfo): number {
-	if (info.type === 'suite') {
-		let total = 0;
-		for (const child of info.children) {
-			total += countTests(child);
-		}
-		return total;
-	} else { // info.type === 'test'
-		return 1;
 	}
 }
