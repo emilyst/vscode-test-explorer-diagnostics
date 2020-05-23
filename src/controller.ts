@@ -1,12 +1,4 @@
-import {
-	Diagnostic,
-	DiagnosticCollection,
-	DiagnosticSeverity,
-	Position,
-	Range,
-	Uri,
-	languages,
-} from 'vscode';
+import * as vscode from 'vscode';
 
 import {
 	TestAdapter,
@@ -18,12 +10,12 @@ import {
 
 export class TestExplorerDiagnosticsController implements TestController {
 	private readonly disposables = new Map<TestAdapter, { dispose(): void }[]>();
-	private readonly diagnosticCollection: DiagnosticCollection;
+	private readonly diagnosticCollection: vscode.DiagnosticCollection;
 	private readonly testEventsById = new Map<string, TestEvent>();
 	private testInfosById = new Map<string, TestInfo>();
 
 	constructor() {
-		this.diagnosticCollection = languages.createDiagnosticCollection('test-explorer-diagnostics');
+		this.diagnosticCollection = vscode.languages.createDiagnosticCollection('test-explorer-diagnostics');
 	}
 
 	registerTestAdapter(adapter: TestAdapter): void {
@@ -45,7 +37,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 
 				this.testInfosById = newTestInfosById;
 
-				this.resetDiagnosticsCollection();
+				this.refreshDiagnostics();
 			}
 		}));
 
@@ -56,7 +48,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 				}
 			}
 
-			this.resetDiagnosticsCollection();
+			this.refreshDiagnostics();
 		}));
 
 		if (adapter.retire) {
@@ -68,51 +60,9 @@ export class TestExplorerDiagnosticsController implements TestController {
 					});
 				}
 
-				this.resetDiagnosticsCollection();
+				this.refreshDiagnostics();
 			}));
 		}
-	}
-
-	private resetDiagnosticsCollection() {
-		this.diagnosticCollection.clear();
-
-		this.buildDiagnosticsByPath().forEach((diagnostics, path) => {
-			this.diagnosticCollection.set(Uri.file(path), diagnostics);
-		});
-	}
-
-	private buildDiagnosticsByPath() {
-		return Array.from(this.testEventsById.entries()).reduce((accumulator, [id, event]) => {
-			if (event.state !== 'failed') {
-				return accumulator;
-			}
-
-			if (this.testInfosById.has(id)) {
-				const info = this.testInfosById.get(id)!;
-
-				if (info.file && event.decorations) {
-					const diagnostics: Diagnostic[] = event.decorations.map(decoration => {
-						const newDiagnostic = new Diagnostic(
-							new Range(
-								new Position(decoration.line, 0),
-								new Position(decoration.line, 999)  // just do the whole line for now
-							),
-							decoration.message.trim().replace(/[\s]+/g, ' '),
-							DiagnosticSeverity.Error
-						);
-						newDiagnostic.source = 'Test Explorer';
-
-						return newDiagnostic;
-					});
-
-					accumulator.set(
-						info.file,
-						(accumulator.get(info.file) || []).concat(diagnostics || [])
-					);
-				}
-			}
-			return accumulator;
-		}, new Map<string, Diagnostic[]>());
 	}
 
 	private flattenTestInfos(info: TestSuiteInfo | TestInfo): TestInfo[] {
@@ -122,6 +72,81 @@ export class TestExplorerDiagnosticsController implements TestController {
 			});
 		} else {
 			return [info];
+		}
+	}
+
+	private refreshDiagnostics() {
+		this.diagnosticCollection.clear();
+
+		this.buildDiagnosticsByPath().forEach((diagnostics, path) => {
+			this.diagnosticCollection.set(vscode.Uri.file(path), diagnostics);
+		});
+	}
+
+	private buildDiagnosticsByPath() {
+		return Array.from(this.testEventsById.entries()).reduce((accumulator, [id, event]) => {
+			if (!vscode.workspace.getConfiguration('testExplorerDiagnostics.show').get(event.state)) {
+				return accumulator;
+			}
+
+			if (this.testInfosById.has(id)) {
+				const info = this.testInfosById.get(id)!;
+
+				if (info.file) {  // TODO: What if TestInfo.file isn't just a string?
+					const newDiagnostic = new vscode.Diagnostic(
+						this.getDiagnosticRange(event, info),
+						this.getDiagnosticMessage(event, info),
+						this.getDiagnosticSeverity(event),
+					);
+					newDiagnostic.source = 'Test Explorer';
+
+					accumulator.set(info.file, (accumulator.get(info.file) || []).concat(newDiagnostic));
+				}
+			}
+			return accumulator;
+		}, new Map<string, vscode.Diagnostic[]>());
+	}
+
+	// TODO: What if there are multiple test event decorations?
+	// TODO: How to get the true position of a test (event)?
+	private getDiagnosticRange(event: TestEvent, info: TestInfo): vscode.Range {
+		if (event.decorations) {
+			return new vscode.Range(
+				new vscode.Position(event.decorations[0].line || 0, 0),
+				new vscode.Position(event.decorations[0].line || 0, 999),
+			);
+		} else {
+			return new vscode.Range(
+				new vscode.Position(info.line || 0, 0),
+				new vscode.Position(info.line || 0, 999),
+			);
+		}
+	}
+
+	// TODO: What if there are multiple test event decorations?
+	// TODO: Allow user-customizable diagnostic message
+	private getDiagnosticMessage(event: TestEvent, info: TestInfo): string {
+		const message = `${this.capitalizeFirstLetter(event.state)}: "${info.label}"`;
+
+		if (event.decorations) {
+			return message.concat(` (${event.decorations[0].message.trim().replace(/[\s]+/g, ' ')})`);
+		} else {
+			return message;
+		}
+	}
+
+	private capitalizeFirstLetter([first, ...rest]: string, locale = vscode.env.language) {
+		return [first.toLocaleUpperCase(locale), ...rest].join('');
+	}
+
+	private getDiagnosticSeverity(event: TestEvent): vscode.DiagnosticSeverity {
+		switch (event.state) {
+			case 'skipped':
+				return vscode.DiagnosticSeverity.Warning;
+			case 'passed':
+				return vscode.DiagnosticSeverity.Information;
+			default:
+				return vscode.DiagnosticSeverity.Error;
 		}
 	}
 
