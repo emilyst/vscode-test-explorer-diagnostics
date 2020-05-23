@@ -25,7 +25,8 @@ export class TestExplorerDiagnosticsController implements TestController {
 	private readonly testInfosById = new Map<string, TestInfo>();
 
 	constructor() {
-		this.diagnosticCollection = languages.createDiagnosticCollection('testExplorerDiagnostics');
+		this.diagnosticCollection =
+			languages.createDiagnosticCollection('testExplorerDiagnostics');
 	}
 
 	registerTestAdapter(adapter: TestAdapter): void {
@@ -66,7 +67,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 						this.testInfosById.delete(id);
 						this.testEventsById.delete(id);
 					});
-				}
+				}  // TODO: #7 Should I retire everything here?
 
 				this.refreshDiagnostics();
 			}));
