@@ -92,7 +92,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 			if (this.testInfosById.has(id)) {
 				const info = this.testInfosById.get(id)!;
 
-				if (info.file) {  // TODO: What if TestInfo.file isn't just a string?
+				if (info.file) {  // TODO: #6 What if TestInfo.file isn't just a string?
 					const newDiagnostic = new vscode.Diagnostic(
 						this.getDiagnosticRange(event, info),
 						this.getDiagnosticMessage(event, info),
@@ -107,8 +107,8 @@ export class TestExplorerDiagnosticsController implements TestController {
 		}, new Map<string, vscode.Diagnostic[]>());
 	}
 
-	// TODO: What if there are multiple test event decorations?
-	// TODO: How to get the true position of a test (event)?
+	// TODO: #3 What if there are multiple test event decorations?
+	// TODO: #4 How to get the true position of a test (event)?
 	private getDiagnosticRange(event: TestEvent, info: TestInfo): vscode.Range {
 		if (event.decorations) {
 			return new vscode.Range(
@@ -123,8 +123,8 @@ export class TestExplorerDiagnosticsController implements TestController {
 		}
 	}
 
-	// TODO: What if there are multiple test event decorations?
-	// TODO: Allow user-customizable diagnostic message
+	// TODO: #3 What if there are multiple test event decorations?
+	// TODO: #5 Allow user-customizable diagnostic message
 	private getDiagnosticMessage(event: TestEvent, info: TestInfo): string {
 		const message = `${this.capitalizeFirstLetter(event.state)}: "${info.label}"`;
 
