@@ -52,5 +52,31 @@
   "activationEvents": [
     "*"
   ],
-  "contributes": {}
+  "contributes": {
+    "configuration": {
+      "title": "Test Explorer Diagnostics",
+      "properties": {
+        "testExplorerDiagnostics.show.failed": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show failed tests as errors in the Problems panel."
+        },
+        "testExplorerDiagnostics.show.passed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show passed tests as info in the Problems panel."
+        },
+        "testExplorerDiagnostics.show.errored": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show tests with errors as errors in the Problems panel."
+        },
+        "testExplorerDiagnostics.show.skipped": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show skipped tests as warnings in the Problems panel."
+        }
+      }
+    }
+  }
 }
