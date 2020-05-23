@@ -17,7 +17,7 @@ This extension should be considered early alpha. It should work, but I have bare
 ### To do ###
 
 * Handle retired test states fully.
-* Add preferences for which severity of diagnostics to provide.
 * Add suggestions for preferences in Test Explorer to set.
 * Discover proper ranges to provide diagnostics.
 * Custom extension icon.
+* Allow user to customize formatting of diagnostics.
