@@ -1,4 +1,14 @@
-import * as vscode from 'vscode';
+import {
+	Diagnostic,
+	DiagnosticCollection,
+	DiagnosticSeverity,
+	Position,
+	Range,
+	Uri,
+	env,
+	languages,
+	workspace,
+} from 'vscode';
 
 import {
 	TestAdapter,
@@ -10,12 +20,12 @@ import {
 
 export class TestExplorerDiagnosticsController implements TestController {
 	private readonly disposables = new Map<TestAdapter, { dispose(): void }[]>();
-	private readonly diagnosticCollection: vscode.DiagnosticCollection;
+	private readonly diagnosticCollection: DiagnosticCollection;
 	private readonly testEventsById = new Map<string, TestEvent>();
 	private readonly testInfosById = new Map<string, TestInfo>();
 
 	constructor() {
-		this.diagnosticCollection = vscode.languages.createDiagnosticCollection('test-explorer-diagnostics');
+		this.diagnosticCollection = languages.createDiagnosticCollection('testExplorerDiagnostics');
 	}
 
 	registerTestAdapter(adapter: TestAdapter): void {
@@ -77,13 +87,13 @@ export class TestExplorerDiagnosticsController implements TestController {
 		this.diagnosticCollection.clear();
 
 		this.buildDiagnosticsByPath().forEach((diagnostics, path) => {
-			this.diagnosticCollection.set(vscode.Uri.file(path), diagnostics);
+			this.diagnosticCollection.set(Uri.file(path), diagnostics);
 		});
 	}
 
 	private buildDiagnosticsByPath() {
 		return Array.from(this.testEventsById.entries()).reduce((diagnosticsByPath, [id, event]) => {
-			if (!vscode.workspace.getConfiguration('testExplorerDiagnostics.show').get(event.state)) {
+			if (!workspace.getConfiguration('testExplorerDiagnostics.show').get(event.state)) {
 				return diagnosticsByPath;
 			}
 
@@ -91,7 +101,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 				const info = this.testInfosById.get(id)!;
 
 				if (info.file) {  // TODO: #6 What if TestInfo.file isn't just a string?
-					const newDiagnostic = new vscode.Diagnostic(
+					const newDiagnostic = new Diagnostic(
 						this.getDiagnosticRange(event, info),
 						this.getDiagnosticMessage(event, info),
 						this.getDiagnosticSeverity(event),
@@ -102,15 +112,15 @@ export class TestExplorerDiagnosticsController implements TestController {
 				}
 			}
 			return diagnosticsByPath;
-		}, new Map<string, vscode.Diagnostic[]>());
+		}, new Map<string, Diagnostic[]>());
 	}
 
 	// TODO: #3 What if there are multiple test event decorations?
 	// TODO: #4 How to get the true position of a test (event)?
-	private getDiagnosticRange(event: TestEvent, info: TestInfo): vscode.Range {
-		return new vscode.Range(
-			new vscode.Position(event.decorations?.[0].line || info.line || 0, 0),
-			new vscode.Position(event.decorations?.[0].line || info.line || 0, 999),
+	private getDiagnosticRange(event: TestEvent, info: TestInfo): Range {
+		return new Range(
+			new Position(event.decorations?.[0].line || info.line || 0, 0),
+			new Position(event.decorations?.[0].line || info.line || 0, 999),
 		);
 	}
 
@@ -126,18 +136,18 @@ export class TestExplorerDiagnosticsController implements TestController {
 		}
 	}
 
-	private capitalizeFirstLetter([first, ...rest]: string, locale = vscode.env.language) {
+	private capitalizeFirstLetter([first, ...rest]: string, locale = env.language) {
 		return [first.toLocaleUpperCase(locale), ...rest].join('');
 	}
 
-	private getDiagnosticSeverity(event: TestEvent): vscode.DiagnosticSeverity {
+	private getDiagnosticSeverity(event: TestEvent): DiagnosticSeverity {
 		switch (event.state) {
 			case 'skipped':
-				return vscode.DiagnosticSeverity.Warning;
+				return DiagnosticSeverity.Warning;
 			case 'passed':
-				return vscode.DiagnosticSeverity.Information;
+				return DiagnosticSeverity.Information;
 			default:
-				return vscode.DiagnosticSeverity.Error;
+				return DiagnosticSeverity.Error;
 		}
 	}
 
