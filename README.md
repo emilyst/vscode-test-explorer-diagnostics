@@ -1,7 +1,7 @@
 Test Explorer Diagnostics Controller
 ====================================
 
-This repository contains the source code for the Test Explorer Diagnostics Controller extension for Visual Studio Code. It is meant to work with the [Test Explorer extension](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer).
+This repository contains the source code for the [Test Explorer Diagnostics Controller extension](https://marketplace.visualstudio.com/items?itemName=emilylilylime.vscode-test-explorer-diagnostics) for Visual Studio Code. It requires the [Test Explorer extension](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer).
 
 Using the test states known to the Test Explorer, it populates diagnostics in Visual Studio Code. These appear in the Problems panel. See the screenshot below as an example.
 
