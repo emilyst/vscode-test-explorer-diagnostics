@@ -5,7 +5,7 @@
   "icon": "img/icon.png",
   "author": "Emily Strickland <github@emily.st>",
   "publisher": "emilylilylime",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "license": "MIT",
   "homepage": "https://github.com/emilyst/vscode-test-explorer-diagnostics",
   "repository": {
