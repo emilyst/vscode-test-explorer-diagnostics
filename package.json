@@ -32,6 +32,9 @@
     "rebuild": "npm run clean && npm run build",
     "package": "vsce package",
     "publish": "vsce publish",
+    "publish major": "vsce publish major",
+    "publish minor": "vsce publish minor",
+    "publish patch": "vsce publish patch",
     "vscode:prepublish": "tsc"
   },
   "dependencies": {
