@@ -12,7 +12,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 	private readonly disposables = new Map<TestAdapter, { dispose(): void }[]>();
 	private readonly diagnosticCollection: vscode.DiagnosticCollection;
 	private readonly testEventsById = new Map<string, TestEvent>();
-	private testInfosById = new Map<string, TestInfo>();
+	private readonly testInfosById = new Map<string, TestInfo>();
 
 	constructor() {
 		this.diagnosticCollection = vscode.languages.createDiagnosticCollection('test-explorer-diagnostics');
@@ -22,29 +22,27 @@ export class TestExplorerDiagnosticsController implements TestController {
 		const adapterDisposables: { dispose(): void }[] = [];
 		this.disposables.set(adapter, adapterDisposables);
 
-		adapterDisposables.push(adapter.tests(loadEvent => {
-			if (loadEvent.type === 'finished' && loadEvent.suite) {
-				const newTestInfosById = this.flattenTestInfos(loadEvent.suite).reduce((accumulator, info) => {
-					accumulator.set(info.id, info);
-					return accumulator;
-				}, new Map<string, TestInfo>());
+		adapterDisposables.push(adapter.tests(testLoadEvent => {
+			if (testLoadEvent.type === 'finished' && testLoadEvent.suite) {
+				this.testInfosById.clear();
+				this.flattenTestInfos(testLoadEvent.suite).forEach((info) => {
+					this.testInfosById.set(info.id, info);
+				});
 
 				this.testInfosById.forEach((_: TestInfo, id: string) => {
-					if (!newTestInfosById.has(id)) {
+					if (!this.testInfosById.has(id)) {
 						this.testEventsById.delete(id);  // test has disappeared
 					}
 				});
-
-				this.testInfosById = newTestInfosById;
 
 				this.refreshDiagnostics();
 			}
 		}));
 
-		adapterDisposables.push(adapter.testStates(event => {
-			if (event.type === 'test') {
-				if (typeof event.test === 'string') {
-					this.testEventsById.set(event.test, event);
+		adapterDisposables.push(adapter.testStates(testEvent => {
+			if (testEvent.type === 'test') {
+				if (typeof testEvent.test === 'string') {
+					this.testEventsById.set(testEvent.test, testEvent);
 				}
 			}
 
@@ -67,9 +65,9 @@ export class TestExplorerDiagnosticsController implements TestController {
 
 	private flattenTestInfos(info: TestSuiteInfo | TestInfo): TestInfo[] {
 		if (info.type === 'suite') {
-			return info.children.map(child => this.flattenTestInfos(child)).reduce((accumulator, infos) => {
-				return accumulator.concat(infos);
-			}, []);
+			return info.children
+				.map(child => this.flattenTestInfos(child))
+				.reduce((currentInfos, newInfos) => currentInfos.concat(newInfos));
 		} else {
 			return [info];
 		}
@@ -84,9 +82,9 @@ export class TestExplorerDiagnosticsController implements TestController {
 	}
 
 	private buildDiagnosticsByPath() {
-		return Array.from(this.testEventsById.entries()).reduce((accumulator, [id, event]) => {
+		return Array.from(this.testEventsById.entries()).reduce((diagnosticsByPath, [id, event]) => {
 			if (!vscode.workspace.getConfiguration('testExplorerDiagnostics.show').get(event.state)) {
-				return accumulator;
+				return diagnosticsByPath;
 			}
 
 			if (this.testInfosById.has(id)) {
@@ -100,10 +98,10 @@ export class TestExplorerDiagnosticsController implements TestController {
 					);
 					newDiagnostic.source = 'Test Explorer';
 
-					accumulator.set(info.file, (accumulator.get(info.file) || []).concat(newDiagnostic));
+					diagnosticsByPath.set(info.file, (diagnosticsByPath.get(info.file) || []).concat(newDiagnostic));
 				}
 			}
-			return accumulator;
+			return diagnosticsByPath;
 		}, new Map<string, vscode.Diagnostic[]>());
 	}
 
