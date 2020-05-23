@@ -69,7 +69,7 @@ export class TestExplorerDiagnosticsController implements TestController {
 		if (info.type === 'suite') {
 			return info.children.map(child => this.flattenTestInfos(child)).reduce((accumulator, infos) => {
 				return accumulator.concat(infos);
-			});
+			}, []);
 		} else {
 			return [info];
 		}
@@ -110,17 +110,10 @@ export class TestExplorerDiagnosticsController implements TestController {
 	// TODO: #3 What if there are multiple test event decorations?
 	// TODO: #4 How to get the true position of a test (event)?
 	private getDiagnosticRange(event: TestEvent, info: TestInfo): vscode.Range {
-		if (event.decorations) {
-			return new vscode.Range(
-				new vscode.Position(event.decorations[0].line || 0, 0),
-				new vscode.Position(event.decorations[0].line || 0, 999),
-			);
-		} else {
-			return new vscode.Range(
-				new vscode.Position(info.line || 0, 0),
-				new vscode.Position(info.line || 0, 999),
-			);
-		}
+		return new vscode.Range(
+			new vscode.Position(event.decorations?.[0].line || info.line || 0, 0),
+			new vscode.Position(event.decorations?.[0].line || info.line || 0, 999),
+		);
 	}
 
 	// TODO: #3 What if there are multiple test event decorations?
