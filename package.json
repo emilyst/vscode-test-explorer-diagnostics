@@ -44,7 +44,7 @@
     "rimraf": "^3.0.2",
     "@types/vscode": "~1.45.0",
     "typescript": "^3.9.3",
-    "vsce": "^1.75.0"
+    "vsce": "^1.103.1"
   },
   "engines": {
     "vscode": "^1.45.0"
